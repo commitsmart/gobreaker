@@ -24,26 +24,26 @@ func init() {
 }
 
 // Get wraps http.Get in CircuitBreaker.
-func Get(url string) ([]byte, error) {
-	body, err := cb.Execute(func() (interface{}, error) {
+func Get(url string) ([]byte, *domain.ErrorMessageBody, error) {
+	body, domainErr, err := cb.Execute(func() ([]byte, *domain.ErrorMessageBody, error) {
 		resp, err := http.Get(url)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		defer resp.Body.Close()
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return nil, err
+			return nil, &domain.ErrorMessageBody{}, err
 		}
 
-		return body, nil
+		return body, nil, nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return body.([]byte), nil
+	return body, domainErr, nil
 }
 
 // GetWithCustomError wraps http.Get in CircuitBreaker.
@@ -70,7 +70,7 @@ func GetWithCustomError(url string) ([]byte, *domain.ErrorMessageBody, error) {
 }
 
 func main() {
-	body, err := Get("http://www.google.com/robots.txt")
+	body, _, err := Get("http://www.google.com/robots.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
