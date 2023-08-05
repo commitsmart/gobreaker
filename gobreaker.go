@@ -227,10 +227,10 @@ func (cb *CircuitBreaker) Counts() Counts {
 // Otherwise, Execute returns the result of the request.
 // If a panic occurs in the request, the CircuitBreaker handles it as an error
 // and causes the same panic again.
-func (cb *CircuitBreaker) Execute(req func() ([]byte, *domain.ErrorMessageBody, error)) ([]byte, *domain.ErrorMessageBody, error) {
+func (cb *CircuitBreaker) Execute(req func() (interface{}, error)) (interface{}, error) {
 	generation, err := cb.beforeRequest()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	defer func() {
@@ -241,9 +241,9 @@ func (cb *CircuitBreaker) Execute(req func() ([]byte, *domain.ErrorMessageBody, 
 		}
 	}()
 
-	result, domainErr, err := req()
+	result, err := req()
 	cb.afterRequest(generation, cb.isSuccessful(err))
-	return result, domainErr, err
+	return result, err
 }
 
 // ExecuteWithCustomError runs the given request if the CircuitBreaker accepts it.
