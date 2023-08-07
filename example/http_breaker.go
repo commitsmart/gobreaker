@@ -6,7 +6,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/sony/gobreaker"
+	"github.com/commitsmart/gobreaker"
+	"github.com/commitsmart/gobreaker/domain"
 )
 
 var cb *gobreaker.CircuitBreaker
@@ -45,8 +46,36 @@ func Get(url string) ([]byte, error) {
 	return body.([]byte), nil
 }
 
+// GetWithCustomError wraps http.Get in CircuitBreaker.
+func GetWithCustomError(url string) ([]byte, *domain.ErrorMessageBody, error) {
+	body, domainErr, err := cb.ExecuteWithCustomError(func() ([]byte, *domain.ErrorMessageBody, error) {
+		resp, err := http.Get(url)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, &domain.ErrorMessageBody{}, err
+		}
+
+		return body, nil, nil
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return body, domainErr, nil
+}
+
 func main() {
 	body, err := Get("http://www.google.com/robots.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	body, _, err = GetWithCustomError("http://www.google.com/robots.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
