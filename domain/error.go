@@ -9,5 +9,5 @@ type ErrorMessageBody struct {
 
 type Message struct {
 	Label        string `json:"label"`
-	FromProperty string `json:"fromProperty"`
+	FormProperty string `json:"formProperty"`
 }
